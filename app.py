@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import json
 import os
 import glob
@@ -58,25 +58,22 @@ def get_results():
             
         results[url] = clicks
 
-    # Sort results by click count in descending order and then by domain priority
-    def get_domain_priority(url):
-        if ".org" in url:
-            return 0
-        elif ".edu" in url:
-            return 1
-        elif ".com" in url:
-            return 2
-        else:
-            return 3
+    # First, sort by clicks in descending order
+    results_sorted = sorted(results.items(), key=lambda x: x[1], reverse=True)
     
-    # Sort by clicks (descending) first, then by domain priority
-    sorted_results = sorted(results.items(), 
-                           key=lambda item: (-item[1], get_domain_priority(item[0])))
+    # Print the sorted results
+    print("Sorted results:", results_sorted)
     
-    # Convert back to dictionary (using dict to preserve insertion order in Python 3.7+)
-    sorted_results_dict = dict(sorted_results)
-
-    return jsonify({"results": sorted_results_dict})
+    # Use OrderedDict to maintain insertion order
+    sorted_results_dict = OrderedDict()
+    for url, clicks in results_sorted:
+        sorted_results_dict[url] = clicks
+    
+    print("Sorted results dict:", sorted_results_dict)
+    
+    # Create a direct JSON response to preserve order
+    response_dict = {"results": dict(sorted_results_dict)}
+    return Response(json.dumps(response_dict), mimetype='application/json')
 
 @app.route('/trends', methods=['POST'])
 def get_trends():
